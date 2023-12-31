@@ -6,7 +6,7 @@
 #include <chrono>
 
 using Real = double;
-using View1D = Kokkos::View<Real*, Kokkos::LayoutRight>;
+using View1D = Kokkos::View<Real*, Kokkos::LayoutRight, Kokkos::DefaultExecutionSpace>;
 View1D central_diff_1D(const View1D& r, Real dx){
     int n = r.size();
     View1D ar("ar",n);
@@ -118,19 +118,20 @@ int main(int argc, char* argv[]) {
     Kokkos::View<double*> sol("sol", N);
     Kokkos::parallel_for(N, KOKKOS_LAMBDA(const int i) {
         x(i) = i * dx;
+        phi(i)=0.0;
     });
 
-    phi[0] = 1.0;
-    phi[N - 1] = 0.0;
-    b[0] = phi[0];
-    b[N - 1] = phi[N - 1];
+    phi(0) = 1.0;
+    phi(N - 1) = 0.0;
+    b(0) = phi(0);
+    b(N - 1) = phi(N - 1);
 
 
     sol = conjugate(central_diff_1D, b, phi, dx);
 
-    sol[0] = 1.0;
+    sol(0) = 1.0;
     for (int i = 0; i < N; ++i) {
-        std::cout<<x[i]<<" "<<sol[i]<<std::endl;
+        std::cout<<x(i)<<" "<<sol(i)<<std::endl;
     }
     auto end_time = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time-start_time);
@@ -138,4 +139,6 @@ int main(int argc, char* argv[]) {
     std::cout << "Execution Time: " << duration.count() << " microseconds" << std::endl;
 
     Kokkos::finalize();
+    
+    return 0;
 }
